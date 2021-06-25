@@ -21,8 +21,10 @@ def setup_logging() -> None:
     base_logger.addHandler(file_handler)
 
 
-with open("config.json", "r") as f:
-    config = json.load(f)
-simple = SimpleBackup(config)
-simple.setup_schedules()
-simple.run_scheduler()
+if __name__ == "__main__":
+    setup_logging()
+    with open("config.json", "r") as f:
+        config = json.load(f)
+    simple = SimpleBackup(config)
+    simple.setup_schedules()
+    simple.run_scheduler()
