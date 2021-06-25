@@ -19,7 +19,7 @@ class SimpleBackup:
         output_factory = OutputFactory()
         schedule_factory = ScheduleFactory()
         self.sources = [source_factory.from_json(source, schedule_factory) for source in config["sources"]]
-        self.outputs = [output_factory.from_json(output) for output in config["outputs"]]
+        self.outputs = [output_factory.from_json(output) for output in config.get("outputs", [])]
         self.running = False
         heartbeat.heartbeat_app_url = config["heartbeat_url"]
         self.heartbeat_id = config["heartbeat_id"]
