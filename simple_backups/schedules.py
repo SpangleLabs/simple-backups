@@ -50,7 +50,7 @@ class FiveMinutes(Schedule):
 
     def schedule_job(self, job: Callable[[], None]):
         for m in range(0, 60, 5):
-            schedule.every().hour.at(f":{m:02}")
+            schedule.every().hour.at(f":{m:02}").do(job)
 
 
 class ScheduleFactory:
