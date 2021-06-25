@@ -1,6 +1,5 @@
-import os
 import shutil
-import subprocess
+import sqlite3
 from abc import abstractmethod, ABC
 from datetime import datetime
 from typing import Dict
@@ -69,10 +68,16 @@ class SqliteSource(Source):
         self.db_path = db_path
 
     def backup(self, backup_timestamp: datetime) -> str:
+        def progress(_, remaining, total):
+            print(f"Copied {total-remaining} of {total} pages..")
+
         output_path = self.output_path(backup_timestamp, "sq3")
-        raise Exception()
-        subprocess.run()  # TODO
-        os.run(f"sqlite3 {self.db_path} \".backup '{output_path}'\"")
+        con = sqlite3.connect(self.db_path)
+        backup = sqlite3.connect(output_path)
+        with backup:
+            con.backup(backup, pages=1, progress=progress)
+        backup.close()
+        con.close()
         return output_path
 
 
