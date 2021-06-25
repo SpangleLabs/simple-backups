@@ -53,6 +53,7 @@ class SimpleBackup:
         schedule.every(2).minutes.do(self.send_heartbeat)
 
     def run_scheduler(self):
+        self.send_heartbeat()
         self.running = True
         while self.running:
             logger.debug("Checking for schedules")
