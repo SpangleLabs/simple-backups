@@ -23,6 +23,7 @@ class SimpleBackup:
             output.send_backup(backup_path)
 
     def send_heartbeat(self) -> None:
+        # TODO
         raise NotImplementedError
 
     def setup_schedules(self):
