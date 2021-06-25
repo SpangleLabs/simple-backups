@@ -17,6 +17,7 @@ class SimpleBackup:
         self.sources = [source_factory.from_json(source, schedule_factory) for source in config["sources"]]
         self.outputs = [output_factory.from_json(output) for output in config["outputs"]]
         self.heartbeat_url = config["heartbeat_url"]
+        self.running = False
 
     def run_backup(self, source: Source) -> None:
         timestamp = datetime.now()
@@ -34,5 +35,7 @@ class SimpleBackup:
         schedule.every(2).minutes.do(self.send_heartbeat)
 
     def run_scheduler(self):
-        schedule.run_pending()
-        time.sleep(1)
+        self.running = True
+        while self.running:
+            schedule.run_pending()
+            time.sleep(1)
