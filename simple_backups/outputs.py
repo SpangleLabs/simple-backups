@@ -1,7 +1,10 @@
+import logging
 from abc import ABC, abstractmethod
 from typing import Dict
 
 from google.cloud import storage
+
+logger = logging.getLogger(__name__)
 
 
 class Output(ABC):
@@ -31,6 +34,7 @@ class GoogleStorage(Output):
             self.bucket.patch()
 
     def send_backup(self, backup_path: str) -> None:
+        logger.info(f"Sending backup to google storage bucket {self.bucket_id}")
         blob = self.bucket.blob(backup_path)
         blob.upload_from_filename(filename=backup_path)
 
@@ -57,4 +61,5 @@ class OutputFactory:
         cls = self.names_lookup.get(name.casefold())
         if cls is None:
             raise ValueError(f"{name} is not a valid output type")
+        logger.info(f"Creating output of type {name}")
         return cls.from_json(config)

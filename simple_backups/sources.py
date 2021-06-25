@@ -1,3 +1,4 @@
+import logging
 import shutil
 import sqlite3
 from abc import abstractmethod, ABC
@@ -5,6 +6,8 @@ from datetime import datetime
 from typing import Dict
 
 from simple_backups.schedules import Schedule, ScheduleFactory
+
+logger = logging.getLogger(__name__)
 
 
 class Source(ABC):
@@ -36,6 +39,7 @@ class FileSource(Source):
         self.file_path = file_path
 
     def backup(self, backup_timestamp: datetime) -> str:
+        logger.debug(f"Backing up file for source {self.name}")
         file_ext = self.file_path.split(".")[-1]
         output_path = self.output_path(backup_timestamp, file_ext)
         shutil.copy(self.file_path, output_path)
@@ -59,6 +63,7 @@ class DirectorySource(Source):
         self.dir_path = dir_path
 
     def backup(self, backup_timestamp: datetime) -> str:
+        logger.info(f"Backing up directory for source {self.name}")
         output_path = self.output_path(backup_timestamp, "zip")
         shutil.make_archive(output_path, "zip", self.dir_path)
         return output_path
@@ -81,8 +86,10 @@ class SqliteSource(Source):
         self.db_path = db_path
 
     def backup(self, backup_timestamp: datetime) -> str:
+        logger.info(f"Backing up sqlite database for {self.name}")
+
         def progress(_, remaining, total):
-            print(f"Copied {total-remaining} of {total} pages..")
+            logger.debug(f"Copied {total - remaining} of {total} pages..")
 
         output_path = self.output_path(backup_timestamp, "sq3")
         con = sqlite3.connect(self.db_path)
@@ -121,4 +128,5 @@ class SourceFactory:
         cls = self.names_lookup.get(name.casefold())
         if cls is None:
             raise ValueError(f"{name} is not a valid source")
+        logger.info(f"Creating source of type {name}")
         return cls.from_json(config, schedule_factory)

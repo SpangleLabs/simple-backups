@@ -18,6 +18,5 @@ https://googleapis.dev/python/storage/latest/index.html
 
 ## TODO
 - Remote files and directories
-- logging
 - Dailys or firestore sources
 - Remote SQL database

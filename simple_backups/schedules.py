@@ -1,8 +1,11 @@
+import logging
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import List, Callable, Dict
 
 import schedule
+
+logger = logging.getLogger(__name__)
 
 
 class Schedule(ABC):
@@ -68,4 +71,5 @@ class ScheduleFactory:
         cls = self.names_lookup.get(name.casefold())
         if cls is None:
             raise ValueError(f"{name} is not a valid schedule")
+        logger.info(f"Creating schedule {name}")
         return cls()
