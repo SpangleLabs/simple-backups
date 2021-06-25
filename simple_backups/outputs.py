@@ -61,5 +61,5 @@ class OutputFactory:
         cls = self.names_lookup.get(name.casefold())
         if cls is None:
             raise ValueError(f"{name} is not a valid output type")
-        logger.info(f"Creating output of type {name}")
+        logger.info(f"Creating output of type: {name}")
         return cls.from_json(config)

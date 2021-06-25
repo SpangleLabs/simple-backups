@@ -128,5 +128,5 @@ class SourceFactory:
         cls = self.names_lookup.get(name.casefold())
         if cls is None:
             raise ValueError(f"{name} is not a valid source")
-        logger.info(f"Creating source of type {name}")
+        logger.info(f"Creating source of type: {name}")
         return cls.from_json(config, schedule_factory)

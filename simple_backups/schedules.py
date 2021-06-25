@@ -71,5 +71,5 @@ class ScheduleFactory:
         cls = self.names_lookup.get(name.casefold())
         if cls is None:
             raise ValueError(f"{name} is not a valid schedule")
-        logger.info(f"Creating schedule {name}")
+        logger.info(f"Creating schedule: {name}")
         return cls()
