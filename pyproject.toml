@@ -8,6 +8,7 @@ authors = ["Joshua Coales <joshua@coales.co.uk>"]
 python = "^3.8"
 schedule = "^1.1.0"
 google-cloud-storage = "^1.39.0"
+simple-heartbeat = "^0.1.2"
 
 [tool.poetry.dev-dependencies]
 
