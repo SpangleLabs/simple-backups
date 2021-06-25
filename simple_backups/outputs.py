@@ -26,6 +26,9 @@ class GoogleStorage(Output):
         self.bucket_id = bucket_id
         self.client = storage.Client()
         self.bucket = self.client.get_bucket(bucket_id)
+        if not self.bucket.versioning_enabled:
+            self.bucket.versioning_enabled = True
+            self.bucket.patch()
 
     def send_backup(self, backup_path: str) -> None:
         blob = self.bucket.blob(backup_path)
