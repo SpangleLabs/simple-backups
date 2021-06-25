@@ -5,6 +5,7 @@ from typing import Dict
 import schedule
 
 from simple_backups.outputs import OutputFactory
+from simple_backups.schedules import ScheduleFactory
 from simple_backups.sources import SourceFactory, Source
 
 
@@ -12,7 +13,8 @@ class SimpleBackup:
     def __init__(self, config: Dict) -> None:
         source_factory = SourceFactory()
         output_factory = OutputFactory()
-        self.sources = [source_factory.from_json(source) for source in config["sources"]]
+        schedule_factory = ScheduleFactory()
+        self.sources = [source_factory.from_json(source, schedule_factory) for source in config["sources"]]
         self.outputs = [output_factory.from_json(output) for output in config["outputs"]]
         self.heartbeat_url = config["heartbeat_url"]
 

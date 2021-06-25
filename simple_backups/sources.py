@@ -23,6 +23,10 @@ class Source(ABC):
     def output_path(self, backup_timestamp: datetime, ext: str) -> str:
         return f"backups/{self.name}/{self.schedule.output_subdir}/{backup_timestamp.isoformat()}.{ext}"
 
+    @classmethod
+    def from_json(cls, config: Dict, schedule_factory: ScheduleFactory) -> 'Source':
+        raise NotImplementedError
+
 
 class FileSource(Source):
     type = "file"
@@ -38,8 +42,8 @@ class FileSource(Source):
         return output_path
 
     @classmethod
-    def from_json(cls, config: Dict) -> 'FileSource':
-        schedule = ScheduleFactory().from_name(config["schedule"])
+    def from_json(cls, config: Dict, schedule_factory: ScheduleFactory) -> 'FileSource':
+        schedule = schedule_factory.from_name(config["schedule"])
         return FileSource(
             config["name"],
             schedule,
@@ -58,6 +62,15 @@ class DirectorySource(Source):
         output_path = self.output_path(backup_timestamp, "zip")
         shutil.make_archive(output_path, "zip", self.dir_path)
         return output_path
+
+    @classmethod
+    def from_json(cls, config: Dict, schedule_factory: ScheduleFactory) -> 'FileSource':
+        schedule = schedule_factory.from_name(config["schedule"])
+        return FileSource(
+            config["name"],
+            schedule,
+            config["path"]
+        )
 
 
 class SqliteSource(Source):
@@ -80,6 +93,15 @@ class SqliteSource(Source):
         con.close()
         return output_path
 
+    @classmethod
+    def from_json(cls, config: Dict, schedule_factory: ScheduleFactory) -> 'Source':
+        schedule = schedule_factory.from_name(config["schedule"])
+        return SqliteSource(
+            config["name"],
+            schedule,
+            config["path"]
+        )
+
 
 class SourceFactory:
     source_classes = [FileSource, DirectorySource, SqliteSource]
@@ -94,9 +116,9 @@ class SourceFactory:
                 )
             self.names_lookup[source.type.casefold()] = source
 
-    def from_json(self, config: Dict) -> Source:
+    def from_json(self, config: Dict, schedule_factory: ScheduleFactory) -> Source:
         name = config["type"]
         cls = self.names_lookup.get(name.casefold())
         if cls is None:
             raise ValueError(f"{name} is not a valid source")
-        return cls.from_json(config)
+        return cls.from_json(config, schedule_factory)
