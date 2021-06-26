@@ -48,7 +48,7 @@ class SimpleBackup:
     def setup_schedules(self) -> None:
         logger.info("Setting up source schedules")
         for source in self.sources:
-            source.schedule.schedule_job(lambda: self.run_backup(source))
+            source.schedule.schedule_job(self.run_backup, source)
         logger.info("Setting up heartbeat schedule")
         schedule.every(2).minutes.do(self.send_heartbeat)
 
