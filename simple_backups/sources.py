@@ -1,4 +1,5 @@
 import logging
+import os
 import shutil
 import sqlite3
 from abc import abstractmethod, ABC
@@ -24,7 +25,11 @@ class Source(ABC):
         raise NotImplementedError
 
     def output_path(self, backup_timestamp: datetime, ext: str) -> str:
-        return f"backups/{self.name}/{self.schedule.output_subdir}/{backup_timestamp.isoformat()}.{ext}"
+        timestamp = backup_timestamp.strftime("%Y%m%dT%H%M%S")
+        filename = f"{timestamp}.{ext}"
+        backup_dir = f"backups/{self.name}/{self.schedule.output_subdir(backup_timestamp)}"
+        os.makedirs(backup_dir, exist_ok=True)
+        return f"{backup_dir}/{filename}"
 
     @classmethod
     def from_json(cls, config: Dict, schedule_factory: ScheduleFactory) -> 'Source':
