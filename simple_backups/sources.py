@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import shutil
@@ -7,6 +8,7 @@ from datetime import datetime
 from typing import Dict
 
 import paramiko
+import requests
 
 from simple_backups.schedules import Schedule, ScheduleFactory
 
@@ -167,8 +169,48 @@ class SSHRemoteDirectory(Source):
         )
 
 
+class DailysSource(Source):
+    type = "dailys"
+
+    def __init__(self, name: str, schedule: Schedule, dailys_url: str, auth_key: str):
+        super().__init__(name, schedule)
+        self.dailys_url = dailys_url
+        self.auth_key = auth_key
+
+    def backup(self, backup_timestamp: datetime) -> str:
+        logger.info(f"Backing up dailys data for {self.name}")
+        output_path = self.output_path(backup_timestamp, "json")
+        dailys_data = {}
+        logger.debug("Getting dailys stat names listing")
+        stat_names = requests.get(
+            f"{self.dailys_url}/stats/",
+            headers={"Authorization": self.auth_key}
+        ).json()
+        logger.info(f"Getting dailys data for stats: {stat_names}")
+        for stat_name in stat_names:
+            logger.debug(f"Downloading dailys data for: {stat_name}")
+            dailys_data[stat_name] = requests.get(
+                f"{self.dailys_url}/stats/{stat_name}/",
+                headers={"Authorization": self.auth_key}
+            ).json()
+        logger.debug("Saving dailys data")
+        with open(output_path, "w") as f:
+            json.dump(dailys_data, f)
+        return output_path
+
+    @classmethod
+    def from_json(cls, config: Dict, schedule_factory: ScheduleFactory) -> 'Source':
+        schedule = schedule_factory.from_name(config["schedule"])
+        return cls(
+            config["name"],
+            schedule,
+            config["dailys_url"],
+            config["auth_key"]
+        )
+
+
 class SourceFactory:
-    source_classes = [FileSource, DirectorySource, SqliteSource, SSHRemoteDirectory]
+    source_classes = [FileSource, DirectorySource, SqliteSource, SSHRemoteDirectory, DailysSource]
 
     def __init__(self) -> None:
         self.names_lookup = {}

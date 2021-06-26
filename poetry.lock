@@ -375,7 +375,7 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "78f506f02ebadcb60bba3e2b33aec5301fa83696c1f9c4ebe71bedbe37426bed"
+content-hash = "91020a24f93451ad53b96bec18bec149f80b0d00da1ce93490fd0b7b06b78c78"
 
 [metadata.files]
 bcrypt = [
