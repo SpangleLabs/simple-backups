@@ -6,6 +6,8 @@ from abc import abstractmethod, ABC
 from datetime import datetime
 from typing import Dict
 
+import paramiko
+
 from simple_backups.schedules import Schedule, ScheduleFactory
 
 logger = logging.getLogger(__name__)
@@ -115,8 +117,58 @@ class SqliteSource(Source):
         )
 
 
+class SSHRemoteDirectory(Source):
+    type = "remote_directory"
+
+    def __init__(self, name: str, schedule: Schedule, host: str, user: str, password: str, path: str):
+        super().__init__(name, schedule)
+        self.host = host
+        self.user = user
+        self.password = password
+        self.path = path
+
+    def test_connection(self) -> None:
+        ssh = paramiko.SSHClient()
+        try:
+            ssh.connect(self.host, username=self.user, password=self.password)
+        finally:
+            ssh.close()
+
+    def backup(self, backup_timestamp: datetime) -> str:
+        logger.info(f"Backing up remote directory for {self.name}")
+        output_path = self.output_path(backup_timestamp, "tar")
+        ssh = paramiko.SSHClient()
+        try:
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh.connect(self.host, username=self.user, password=self.password)
+            remote_backup_path = f"/tmp/{self.name.replace(' ', '_')}-{backup_timestamp.strftime('%Y%m%dT%H%M%S')}.tar"
+            stdin, stdout, stderr = ssh.exec_command(f"tar -cvf {remote_backup_path} {self.path}")
+            logger.debug(f"ssh stderr: {stderr.readlines()}")
+            logger.debug(f"ssh stdout: {stdout.readlines()}")
+            sftp = ssh.open_sftp()
+            try:
+                sftp.get(remote_backup_path, output_path)
+            finally:
+                sftp.close()
+        finally:
+            ssh.close()
+        return output_path
+
+    @classmethod
+    def from_json(cls, config: Dict, schedule_factory: ScheduleFactory) -> 'Source':
+        schedule = schedule_factory.from_name(config["schedule"])
+        return cls(
+            config["name"],
+            schedule,
+            config["host"],
+            config["user"],
+            config["pass"],
+            config["path"]
+        )
+
+
 class SourceFactory:
-    source_classes = [FileSource, DirectorySource, SqliteSource]
+    source_classes = [FileSource, DirectorySource, SqliteSource, SSHRemoteDirectory]
 
     def __init__(self) -> None:
         self.names_lookup = {}
