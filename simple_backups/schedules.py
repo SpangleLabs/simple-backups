@@ -21,7 +21,7 @@ class Schedule(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def schedule_job(self, job: Callable[[Source], None], source: Source):
+    def schedule_job(self, job: Callable[['Source'], None], source: 'Source'):
         raise NotImplementedError
 
 
@@ -31,7 +31,7 @@ class Daily(Schedule):
     def output_subdir(self, backup_timestamp: datetime) -> str:
         return backup_timestamp.strftime("%Y/%m")
 
-    def schedule_job(self, job: Callable[[Source], None], source: Source):
+    def schedule_job(self, job: Callable[['Source'], None], source: 'Source'):
         schedule.every().day.at("00:00").do(job, source)
 
 
@@ -41,7 +41,7 @@ class Hourly(Schedule):
     def output_subdir(self, backup_timestamp: datetime) -> str:
         return backup_timestamp.strftime("%Y/%m/%d")
 
-    def schedule_job(self, job: Callable[[Source], None], source: Source):
+    def schedule_job(self, job: Callable[['Source'], None], source: 'Source'):
         schedule.every().hour.at(":00").do(job, source)
 
 
@@ -51,7 +51,7 @@ class FiveMinutes(Schedule):
     def output_subdir(self, backup_timestamp: datetime) -> str:
         return backup_timestamp.strftime("%Y/%m/%d")
 
-    def schedule_job(self, job: Callable[[Source], None], source: Source):
+    def schedule_job(self, job: Callable[['Source'], None], source: 'Source'):
         for m in range(0, 60, 5):
             schedule.every().hour.at(f":{m:02}").do(job, source)
 
