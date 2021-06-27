@@ -129,6 +129,7 @@ class SSHRemoteDirectory(Source):
         self.user = user
         self.password = password
         self.path = path
+        self.test_connection()
 
     def test_connection(self) -> None:
         ssh = paramiko.SSHClient()
@@ -177,6 +178,15 @@ class DailysSource(Source):
         super().__init__(name, schedule)
         self.dailys_url = dailys_url
         self.auth_key = auth_key
+        self.test_connection()
+
+    def test_connection(self) -> None:
+        resp = requests.get(
+            f"{self.dailys_url}/stats/",
+            headers={"Authorization": self.auth_key}
+        )
+        if resp.status_code != 200:
+            raise ValueError(f"Could not authenticate to Dailys system \"{self.name}\". Got response: {resp.content}")
 
     def backup(self, backup_timestamp: datetime) -> str:
         logger.info(f"Backing up dailys data for {self.name}")
