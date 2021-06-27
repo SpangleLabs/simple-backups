@@ -132,6 +132,7 @@ class SSHRemoteDirectory(Source):
         self.test_connection()
 
     def test_connection(self) -> None:
+        logger.info(f"Testing ssh connection for: {self.name}")
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:
@@ -182,6 +183,7 @@ class DailysSource(Source):
         self.test_connection()
 
     def test_connection(self) -> None:
+        logger.info(f"Testing dailys connection for: {self.name}")
         resp = requests.get(
             f"{self.dailys_url}/stats/",
             headers={"Authorization": self.auth_key}
