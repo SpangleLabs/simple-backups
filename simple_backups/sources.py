@@ -3,9 +3,10 @@ import logging
 import os
 import shutil
 import sqlite3
+import subprocess
 from abc import abstractmethod, ABC
 from datetime import datetime
-from typing import Dict
+from typing import Dict, Optional
 
 import paramiko
 import requests
@@ -209,8 +210,50 @@ class DailysSource(Source):
         )
 
 
+class MySQLSource(Source):
+    type = "mysql"
+
+    def __init__(self, name: str, schedule: Schedule, host: Optional[str], username: str, password: str, db_name: str):
+        super().__init__(name, schedule)
+        self.host = host
+        self.username = username
+        self.password = password
+        self.db_name = db_name
+
+    def backup(self, backup_timestamp: datetime) -> str:
+        logger.info(f"Starting mysql database backup for {self.name}")
+        output_file = self.output_path(backup_timestamp, "sql")
+        args = [
+            f"--user={self.username}",
+            f"--password={self.password}",
+            f"--result-file={output_file}",
+            "--column-statistics=0",  # Mysqldump 8 will try and dump these by default, and fail if they don't exist
+            self.db_name
+        ]
+        if self.host:
+            args = [f"--host={self.host}"] + args
+        process = subprocess.Popen(["mysqldump", *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = process.communicate()
+        process.wait()
+        if not os.path.exists(output_file) or os.path.getsize(output_file) == 0:
+            raise Exception(f"mysqldump failed. stderr={err}\nstdout={out}")
+        return output_file
+
+    @classmethod
+    def from_json(cls, config: Dict, schedule_factory: ScheduleFactory) -> 'Source':
+        schedule = schedule_factory.from_name(config["schedule"])
+        return cls(
+            config["name"],
+            schedule,
+            config.get("host"),
+            config["user"],
+            config["pass"],
+            config["db_name"]
+        )
+
+
 class SourceFactory:
-    source_classes = [FileSource, DirectorySource, SqliteSource, SSHRemoteDirectory, DailysSource]
+    source_classes = [FileSource, DirectorySource, SqliteSource, SSHRemoteDirectory, DailysSource, MySQLSource]
 
     def __init__(self) -> None:
         self.names_lookup = {}

@@ -17,5 +17,4 @@ Can also specify output which will copy the backup there, such as google storage
 https://googleapis.dev/python/storage/latest/index.html
 
 ## TODO
-- Remote SQL database
 - Flag to run all backups immediately, maybe one for not running scheduling
