@@ -226,12 +226,22 @@ class DailysSource(Source):
 class MySQLSource(Source):
     type = "mysql"
 
-    def __init__(self, name: str, schedule: Schedule, host: Optional[str], username: str, password: str, db_name: str):
+    def __init__(
+            self,
+            name: str,
+            schedule: Schedule,
+            host: Optional[str],
+            username: str,
+            password: str,
+            db_name: str,
+            ignore_column_stats: bool = False
+    ):
         super().__init__(name, schedule)
         self.host = host
         self.username = username
         self.password = password
         self.db_name = db_name
+        self.ignore_column_stats = ignore_column_stats
 
     def backup(self, backup_timestamp: datetime) -> str:
         logger.info(f"Starting mysql database backup for {self.name}")
@@ -240,11 +250,13 @@ class MySQLSource(Source):
             f"--user={self.username}",
             f"--password={self.password}",
             f"--result-file={output_file}",
-            "--column-statistics=0",  # Mysqldump 8 will try and dump these by default, and fail if they don't exist
-            self.db_name
         ]
+        if self.ignore_column_stats:
+            # Mysqldump 8 will try and dump these by default, and fail if they don't exist
+            args.append("--column-statistics=0")
         if self.host:
             args = [f"--host={self.host}"] + args
+        args.append(self.db_name)
         process = subprocess.Popen(["mysqldump", *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = process.communicate()
         process.wait()
@@ -261,7 +273,8 @@ class MySQLSource(Source):
             config.get("host"),
             config["user"],
             config["pass"],
-            config["db_name"]
+            config["db_name"],
+            config.get("ignore_column_stats", False)
         )
 
 
