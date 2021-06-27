@@ -41,6 +41,12 @@ class SimpleBackup:
         total_time = backup_time + output_time
         logger.info(f"Backup output for {source.name} in {output_time:.3f} seconds. Total: {total_time:.3f}s")
 
+    def run_all_backups(self) -> None:
+        logger.info("Running all backups")
+        for source in self.sources:
+            self.run_backup(source)
+        logger.info("Backups complete")
+
     def send_heartbeat(self) -> None:
         logger.info("Sending heartbeat")
         heartbeat.update_heartbeat(self.heartbeat_id)

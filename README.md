@@ -15,6 +15,3 @@ Can also specify output which will copy the backup there, such as google storage
 - enable versioning in the bucket
 
 https://googleapis.dev/python/storage/latest/index.html
-
-## TODO
-- Flag to run all backups immediately, maybe one for not running scheduling
