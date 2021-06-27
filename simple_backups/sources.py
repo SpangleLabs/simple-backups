@@ -133,6 +133,7 @@ class SSHRemoteDirectory(Source):
 
     def test_connection(self) -> None:
         ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:
             ssh.connect(self.host, username=self.user, password=self.password)
         finally:
