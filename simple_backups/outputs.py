@@ -27,6 +27,7 @@ class GoogleStorage(Output):
     name = "google storage"
     max_attempts = 5
     wait_between_attempts = 20
+    upload_timeout = 300
 
     def __init__(self, bucket_id: str) -> None:
         self.bucket_id = bucket_id
@@ -44,7 +45,7 @@ class GoogleStorage(Output):
         while attempts < self.max_attempts:
             try:
                 attempts += 1
-                blob.upload_from_filename(filename=backup_path)
+                blob.upload_from_filename(filename=backup_path, timeout=self.upload_timeout)
                 return
             except ConnectionError as e:
                 last_error = e
