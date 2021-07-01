@@ -1,4 +1,5 @@
 import logging
+import time
 from abc import ABC, abstractmethod
 from typing import Dict
 
@@ -24,6 +25,8 @@ class Output(ABC):
 
 class GoogleStorage(Output):
     name = "google storage"
+    max_attempts = 5
+    wait_between_attempts = 20
 
     def __init__(self, bucket_id: str) -> None:
         self.bucket_id = bucket_id
@@ -36,7 +39,18 @@ class GoogleStorage(Output):
     def send_backup(self, backup_path: str) -> None:
         logger.info(f"Sending backup to google storage bucket {self.bucket_id}")
         blob = self.bucket.blob(backup_path)
-        blob.upload_from_filename(filename=backup_path)
+        attempts = 0
+        last_error = None
+        while attempts < self.max_attempts:
+            try:
+                attempts += 1
+                blob.upload_from_filename(filename=backup_path)
+                return
+            except ConnectionError as e:
+                last_error = e
+                time.sleep(self.wait_between_attempts)
+                continue
+        raise last_error
 
     @classmethod
     def from_json(cls, config: Dict) -> 'GoogleStorage':
