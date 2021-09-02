@@ -79,9 +79,9 @@ class DirectorySource(Source):
         return output_path
 
     @classmethod
-    def from_json(cls, config: Dict, schedule_factory: ScheduleFactory) -> 'FileSource':
+    def from_json(cls, config: Dict, schedule_factory: ScheduleFactory) -> 'DirectorySource':
         schedule = schedule_factory.from_name(config["schedule"])
-        return FileSource(
+        return cls(
             config["name"],
             schedule,
             config["path"]
