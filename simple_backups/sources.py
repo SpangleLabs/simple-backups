@@ -29,9 +29,11 @@ class Source(ABC):
     def backup(self, backup_timestamp: datetime) -> str:
         raise NotImplementedError
 
-    def output_path(self, backup_timestamp: datetime, ext: str) -> str:
+    def output_path(self, backup_timestamp: datetime, ext: Optional[str]) -> str:
         timestamp = backup_timestamp.strftime("%Y%m%dT%H%M%S")
-        filename = f"{timestamp}.{ext}"
+        filename = timestamp
+        if ext:
+            filename = f"{timestamp}.{ext}"
         backup_dir = f"backups/{self.name}/{self.schedule.output_subdir(backup_timestamp)}"
         os.makedirs(backup_dir, exist_ok=True)
         return f"{backup_dir}/{filename}"
@@ -74,9 +76,9 @@ class DirectorySource(Source):
 
     def backup(self, backup_timestamp: datetime) -> str:
         logger.info(f"Backing up directory for source {self.name}")
-        output_path = self.output_path(backup_timestamp, "zip")
+        output_path = self.output_path(backup_timestamp, None)
         shutil.make_archive(output_path, "zip", self.dir_path)
-        return output_path
+        return f"{output_path}.zip"
 
     @classmethod
     def from_json(cls, config: Dict, schedule_factory: ScheduleFactory) -> 'DirectorySource':
