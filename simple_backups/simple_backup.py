@@ -57,7 +57,7 @@ class SimpleBackup:
             output_name = output_class.name
             output_count.labels(type=output_name).set_function(
                 lambda out=output_class: len([
-                    s for s in self.sources if s.__class__ == out
+                    o for o in self.outputs if o.__class__ == out
                 ])
             )
         logger.info("Simple backup instance created")
