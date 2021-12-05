@@ -5,12 +5,29 @@ from typing import Dict
 
 import schedule
 import heartbeat
+from prometheus_client import start_http_server, Gauge, Histogram
 
 from simple_backups.outputs import OutputFactory
 from simple_backups.schedules import ScheduleFactory
 from simple_backups.sources import SourceFactory, Source
 
 logger = logging.getLogger(__name__)
+source_count = Gauge(
+    "simplebackups_source_count",
+    "Number of backup sources that are set up and scheduled",
+    labelnames=["type", "schedule"]
+)
+output_count = Gauge(
+    "simplebackups_outputs_count",
+    "Number of output sources that are set up",
+    labelnames=["type"]
+)
+backup_times = Histogram(
+    "simplebackups_backup_time_seconds",
+    "Time taken to run each backup and upload the data, in seconds",
+    labelnames=["type"],
+    buckets=[.5, 1, 2, 5, 10, 20, 60, 300, 600, 30*60]
+)
 
 
 class SimpleBackup:
@@ -23,7 +40,26 @@ class SimpleBackup:
         self.running = False
         heartbeat.heartbeat_app_url = config["heartbeat_url"]
         self.heartbeat_id = config["heartbeat_id"]
+        self.prometheus_port = config.get("prometheus_port", 8366)
         heartbeat.initialise_app(self.heartbeat_id, timedelta(minutes=5))
+        # Setup metrics
+        for source_class in source_factory.source_classes:
+            for schedule_class in schedule_factory.schedule_classes:
+                source_name = source_class.type
+                schedule_name = schedule_class.names[0]
+                source_count.labels(type=source_name, schedule=schedule_name).set_function(
+                    lambda soc=source_class, scc=schedule_class: len([
+                        s for s in self.sources if s.__class__ == soc and s.schedule.__class__ == scc
+                    ])
+                )
+                backup_times.labels(type=source_name)
+        for output_class in output_factory.output_classes:
+            output_name = output_class.name
+            output_count.labels(type=output_name).set_function(
+                lambda out=output_class: len([
+                    s for s in self.sources if s.__class__ == out
+                ])
+            )
         logger.info("Simple backup instance created")
 
     def run_backup(self, source: Source) -> None:
@@ -39,6 +75,7 @@ class SimpleBackup:
             output.send_backup(backup_path)
         output_time = (datetime.now()-timestamp).total_seconds()
         total_time = backup_time + output_time
+        backup_times.labels(type=source.type).observe(total_time)
         logger.info(f"Backup output for {source.name} in {output_time:.3f} seconds. Total: {total_time:.3f}s")
 
     def run_all_backups(self) -> None:
@@ -59,6 +96,7 @@ class SimpleBackup:
         schedule.every(2).minutes.do(self.send_heartbeat)
 
     def run_scheduler(self):
+        start_http_server(self.prometheus_port)
         self.send_heartbeat()
         self.running = True
         while self.running:
