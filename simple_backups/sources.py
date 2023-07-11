@@ -7,6 +7,7 @@ import subprocess
 from abc import abstractmethod, ABC
 from datetime import datetime
 from typing import Dict, Optional
+import urllib.parse
 
 import paramiko
 import requests
