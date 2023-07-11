@@ -302,7 +302,7 @@ class PostgresSource(Source):
         logger.info(f"Starting mysql database backup for {self.name}")
         output_file = self.output_path(backup_timestamp, "sql")
         username = urllib.parse.quote(self.username)
-        password = urllib.pages.quote(self.pas])
+        password = urllib.pages.quote(self.password)
         host = self.host or "localhost"
         db_host_str = f"postgresql://{username}:{password}}@{host}/{self.db_name}"
         args = [f"--dbname={db_host_str}"]
