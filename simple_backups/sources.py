@@ -280,8 +280,52 @@ class MySQLSource(Source):
         )
 
 
+class PostgresSource(Source):
+    type = "postgres"
+
+    def __init__(
+            self,
+            name: str,
+            schedule: Schedule,
+            host: Optional[str],
+            username: str,
+            password: str,
+            db_name: str,
+    ):
+        super().__init__(name, schedule)
+        self.host = host
+        self.username = username
+        self.password = password
+        self.db_name = db_name
+
+    def backup(self, backup_timestamp: datetime) -> str:
+        logger.info(f"Starting mysql database backup for {self.name}")
+        output_file = self.output_path(backup_timestamp, "sql")
+        host = self.host or "localhost"
+        db_host_str = "postgresql://{self.username}:{self.password}}@{host}/{self.db_name}"
+        args = [f"--dbname={db_host_str}"]
+        process = subprocess.Popen(["pg_dump", *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = process.communicate()
+        process.wait()
+        if not os.path.exists(output_file) or os.path.getsize(output_file) == 0:
+            raise Exception(f"pg_dump failed. stderr={err}\nstdout={out}")
+        return output_file
+
+    @classmethod
+    def from_json(cls, config: Dict, schedule_factory: ScheduleFactory) -> 'Source':
+        schedule = schedule_factory.from_name(config["schedule"])
+        return cls(
+            config["name"],
+            schedule,
+            config.get("host"),
+            config["user"],
+            config["pass"],
+            config["db_name"],
+        )
+
+
 class SourceFactory:
-    source_classes = [FileSource, DirectorySource, SqliteSource, SSHRemoteDirectory, DailysSource, MySQLSource]
+    source_classes = [FileSource, DirectorySource, SqliteSource, SSHRemoteDirectory, DailysSource, MySQLSource, PostgresSource]
 
     def __init__(self) -> None:
         self.names_lookup = {}
