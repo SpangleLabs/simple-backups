@@ -301,8 +301,10 @@ class PostgresSource(Source):
     def backup(self, backup_timestamp: datetime) -> str:
         logger.info(f"Starting mysql database backup for {self.name}")
         output_file = self.output_path(backup_timestamp, "sql")
+        username = urllib.parse.quote(self.username)
+        password = urllib.pages.quote(self.pas])
         host = self.host or "localhost"
-        db_host_str = "postgresql://{self.username}:{self.password}}@{host}/{self.db_name}"
+        db_host_str = f"postgresql://{username}:{password}}@{host}/{self.db_name}"
         args = [f"--dbname={db_host_str}"]
         process = subprocess.Popen(["pg_dump", *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = process.communicate()
