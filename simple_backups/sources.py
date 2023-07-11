@@ -305,7 +305,7 @@ class PostgresSource(Source):
         username = urllib.parse.quote(self.username)
         password = urllib.pages.quote(self.password)
         host = self.host or "localhost"
-        db_host_str = f"postgresql://{username}:{password}}@{host}/{self.db_name}"
+        db_host_str = f"postgresql://{username}:{password}@{host}/{self.db_name}"
         args = [f"--dbname={db_host_str}"]
         process = subprocess.Popen(["pg_dump", *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = process.communicate()
