@@ -25,6 +25,26 @@ class Schedule(ABC):
         raise NotImplementedError
 
 
+class Once(Schedule):
+    names = ["once", "manual", "run-once"]
+
+    def output_subdir(self, backup_timestamp: datetime) -> str:
+        return backup_timestamp.strftime("%Y")
+
+    def schedule_job(self, job: Callable[['Source'], None], source: 'Source'):
+        pass
+
+
+class Weekly(Schedule):
+    names = ["weekly"]
+
+    def output_subdir(self, backup_timestamp: datetime) -> str:
+        return backup_timestamp.strftime("%Y")
+
+    def schedule_job(self, job: Callable[['Source'], None], source: 'Source'):
+        schedule.every().monday.at("00:00").do(job, source)
+
+
 class Daily(Schedule):
     names = ["daily", "everyday"]
 
