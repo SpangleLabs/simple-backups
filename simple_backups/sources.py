@@ -1,12 +1,14 @@
+import contextlib
 import json
 import logging
 import os
+import shlex
 import shutil
 import sqlite3
 import subprocess
 from abc import abstractmethod, ABC
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Dict, Optional, Iterator
 import urllib.parse
 
 import paramiko
@@ -123,15 +125,12 @@ class SqliteSource(Source):
         )
 
 
-class SSHRemoteDirectory(Source):
-    type = "remote_directory"
-
-    def __init__(self, name: str, schedule: Schedule, host: str, user: str, password: str, path: str):
+class SSHRemoteFile(Source, ABC):
+    def __init__(self, name: str, schedule: Schedule, host: str, user: str, password: str):
         super().__init__(name, schedule)
         self.host = host
         self.user = user
         self.password = password
-        self.path = path
         self.test_connection()
 
     def test_connection(self) -> None:
@@ -144,14 +143,15 @@ class SSHRemoteDirectory(Source):
             ssh.close()
 
     def backup(self, backup_timestamp: datetime) -> str:
-        logger.info(f"Backing up remote directory for {self.name}")
+        logger.info(f"Backing up ssh remote file for {self.name}")
         output_path = self.output_path(backup_timestamp, "tar")
         ssh = paramiko.SSHClient()
         try:
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             ssh.connect(self.host, username=self.user, password=self.password)
             remote_backup_path = f"/tmp/{self.name.replace(' ', '_')}-{backup_timestamp.strftime('%Y%m%dT%H%M%S')}.tar"
-            stdin, stdout, stderr = ssh.exec_command(f"tar -cvf {remote_backup_path} {self.path}")
+            with self.prepare_remote_source(ssh) as remote_src_path:
+                stdin, stdout, stderr = ssh.exec_command(f"tar -cvf {remote_backup_path} {remote_src_path}")
             logger.debug(f"ssh stderr: {stderr.readlines()}")
             logger.debug(f"ssh stdout: {stdout.readlines()}")
             sftp = ssh.open_sftp()
@@ -163,6 +163,23 @@ class SSHRemoteDirectory(Source):
             ssh.close()
         return output_path
 
+    @abstractmethod
+    @contextlib.contextmanager
+    def prepare_remote_source(self, ssh: paramiko.SSHClient) -> Iterator[str]:
+        raise NotImplementedError
+
+class SSHRemoteDirectory(SSHRemoteFile):
+    type = "remote_directory"
+
+    def __init__(self, name: str, schedule: Schedule, host: str, user: str, password: str, path: str):
+        super().__init__(name, schedule, host, user, password)
+        self.path = path
+        self.test_connection()
+
+    @contextlib.contextmanager
+    def prepare_remote_source(self, ssh: paramiko.SSHClient) -> Iterator[str]:
+        yield self.path
+
     @classmethod
     def from_json(cls, config: Dict, schedule_factory: ScheduleFactory) -> 'Source':
         schedule = schedule_factory.from_name(config["schedule"])
@@ -173,6 +190,50 @@ class SSHRemoteDirectory(Source):
             config["user"],
             config["pass"],
             config["path"]
+        )
+
+
+class SSHRemoteCommand(SSHRemoteFile):
+    type = "remote_command"
+
+    def __init__(
+            self,
+            name: str,
+            schedule: Schedule,
+            host: str,
+            user: str,
+            password: str,
+            command: str,
+            cmd_out_path: str,
+    ) -> None:
+        super().__init__(name, schedule, host, user, password)
+        self.command = command
+        self.cmd_out_path = cmd_out_path
+        self.test_connection()
+
+    @contextlib.contextmanager
+    def prepare_remote_source(self, ssh: paramiko.SSHClient) -> Iterator[str]:
+        logger.info("Running command: %s", self.command)
+        stdin, stdout, stderr = ssh.exec_command(f"bash -c {shlex.quote(self.command)}")
+        logger.debug(f"ssh stderr: {stderr.readlines()}")
+        logger.debug(f"ssh stdout: {stdout.readlines()}")
+        logger.info("RAN COMMAND")
+        try:
+            yield self.cmd_out_path
+        finally:
+            ssh.exec_command(f"rm {self.cmd_out_path}")
+
+    @classmethod
+    def from_json(cls, config: Dict, schedule_factory: ScheduleFactory) -> 'Source':
+        schedule = schedule_factory.from_name(config["schedule"])
+        return cls(
+            config["name"],
+            schedule,
+            config["host"],
+            config["user"],
+            config["pass"],
+            config["command"],
+            config["cmd_out_path"],
         )
 
 
@@ -331,7 +392,16 @@ class PostgresSource(Source):
 
 
 class SourceFactory:
-    source_classes = [FileSource, DirectorySource, SqliteSource, SSHRemoteDirectory, DailysSource, MySQLSource, PostgresSource]
+    source_classes = [
+        FileSource,
+        DirectorySource,
+        SqliteSource,
+        SSHRemoteDirectory,
+        SSHRemoteCommand,
+        DailysSource,
+        MySQLSource,
+        PostgresSource,
+    ]
 
     def __init__(self) -> None:
         self.names_lookup = {}
