@@ -27,7 +27,7 @@ class GoogleStorage(Output):
     name = "google storage"
     max_attempts = 5
     wait_between_attempts = 20
-    upload_timeout = 300
+    upload_timeout = 600
 
     def __init__(self, bucket_id: str) -> None:
         self.bucket_id = bucket_id
