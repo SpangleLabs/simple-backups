@@ -217,7 +217,6 @@ class SSHRemoteCommand(SSHRemoteFile):
         stdin, stdout, stderr = ssh.exec_command(f"bash -c {shlex.quote(self.command)}")
         logger.debug(f"ssh stderr: {stderr.readlines()}")
         logger.debug(f"ssh stdout: {stdout.readlines()}")
-        logger.info("RAN COMMAND")
         try:
             yield self.cmd_out_path
         finally:
