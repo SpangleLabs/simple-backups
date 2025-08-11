@@ -77,7 +77,7 @@ class FiveMinutes(Schedule):
 
 
 class ScheduleFactory:
-    schedule_classes = [Daily, Hourly, FiveMinutes]
+    schedule_classes = [Once, Weekly, Daily, Hourly, FiveMinutes]
 
     def __init__(self) -> None:
         self.names_lookup: Dict[str, type] = {}
