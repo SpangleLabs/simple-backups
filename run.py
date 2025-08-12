@@ -25,7 +25,7 @@ def setup_logging(log_level: str = "INFO") -> None:
 
 
 @click.command()
-@click.option("--run-once", type=bool, default=False, help="Run all backups once and exit")
+@click.option("--run-once/--run-schedules", type=bool, default=False, help="Run all backups once and exit")
 @click.option("--run-sources", type=str, help="Comma separated list of backups to run once and exit", default="")
 @click.option("--log-level", type=str, help="Log level for the logger", default="INFO")
 def main(
