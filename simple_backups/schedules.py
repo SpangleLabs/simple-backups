@@ -1,6 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
-from datetime import datetime
+import datetime
 from typing import List, Callable, Dict, TYPE_CHECKING
 
 import schedule
@@ -33,6 +33,20 @@ class Once(Schedule):
 
     def schedule_job(self, job: Callable[['Source'], None], source: 'Source'):
         pass
+
+
+class Monthly(Schedule):
+    names = ["monthly", "everymonth"]
+
+    def output_subdir(self, backup_timestamp: datetime) -> str:
+        return backup_timestamp.strftime("%Y")
+
+    def schedule_job(self, job: Callable[['Source'], None], source: 'Source'):
+        def only_on_first(func: Callable[[], None]):
+            if datetime.date.today().day != 1:
+                return None
+            return func()
+        schedule.every().day.at("00:00").do(only_on_first, lambda: job(source))
 
 
 class Weekly(Schedule):
