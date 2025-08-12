@@ -1,7 +1,7 @@
 import logging
 import time
 from datetime import datetime, timedelta
-from typing import Dict
+from typing import Dict, Optional
 
 import schedule
 import heartbeat
@@ -83,6 +83,19 @@ class SimpleBackup:
         for source in self.sources:
             self.run_backup(source)
         logger.info("Backups complete")
+
+    def find_source_by_name(self, source_name: str) -> Optional[Source]:
+        for source in self.sources:
+            if source.name == source_name:
+                return source
+        return None
+
+    def run_backup_by_name(self, source_name: str) -> None:
+        logger.info(f"Running backup by name {source_name}")
+        source = self.find_source_by_name(source_name)
+        if source is None:
+            raise ValueError(f"Source not found for name: {source_name}")
+        self.run_backup(source)
 
     def send_heartbeat(self) -> None:
         logger.info("Sending heartbeat")
