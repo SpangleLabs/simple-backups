@@ -7,9 +7,9 @@ import schedule
 import heartbeat
 from prometheus_client import start_http_server, Gauge, Histogram
 
-from simple_backups.outputs import OutputFactory
-from simple_backups.schedules import ScheduleFactory
-from simple_backups.sources import SourceFactory, Source
+from simple_backups.outputs import OutputFactory, OUTPUT_CLASSES
+from simple_backups.schedules import ScheduleFactory, SCHEDULE_CLASSES
+from simple_backups.sources import SourceFactory, Source, SOURCE_CLASSES
 
 logger = logging.getLogger(__name__)
 source_count = Gauge(
@@ -43,8 +43,8 @@ class SimpleBackup:
         self.prometheus_port = config.get("prometheus_port", 8366)
         heartbeat.initialise_app(self.heartbeat_id, timedelta(minutes=5))
         # Setup metrics
-        for source_class in source_factory.source_classes:
-            for schedule_class in schedule_factory.schedule_classes:
+        for source_class in SOURCE_CLASSES:
+            for schedule_class in SCHEDULE_CLASSES:
                 source_name = source_class.type
                 schedule_name = schedule_class.names[0]
                 source_count.labels(type=source_name, schedule=schedule_name).set_function(
@@ -53,7 +53,7 @@ class SimpleBackup:
                     ])
                 )
                 backup_times.labels(type=source_name)
-        for output_class in output_factory.output_classes:
+        for output_class in OUTPUT_CLASSES:
             output_name = output_class.name
             output_count.labels(type=output_name).set_function(
                 lambda out=output_class: len([
