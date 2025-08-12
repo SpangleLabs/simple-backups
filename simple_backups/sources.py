@@ -360,7 +360,7 @@ class PostgresSource(Source):
         self.db_name = db_name
 
     def backup(self, backup_timestamp: datetime) -> str:
-        logger.info(f"Starting mysql database backup for {self.name}")
+        logger.info(f"Starting postgres database backup for {self.name}")
         output_file = self.output_path(backup_timestamp, "sql")
         username = urllib.parse.quote(self.username)
         password = urllib.parse.quote(self.password)
