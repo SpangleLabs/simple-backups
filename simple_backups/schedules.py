@@ -1,7 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
 import datetime
-from typing import List, Callable, Dict, TYPE_CHECKING
+from typing import List, Callable, Dict, TYPE_CHECKING, Type
 
 import schedule
 
@@ -9,6 +9,8 @@ if TYPE_CHECKING:
     from simple_backups.sources import Source
 
 logger = logging.getLogger(__name__)
+
+SCHEDULE_CLASSES: list[Type["Schedule"]] = []
 
 
 class Schedule(ABC):
@@ -25,6 +27,12 @@ class Schedule(ABC):
         raise NotImplementedError
 
 
+def register_schedule(schedule_class: Type[Schedule]):
+    SCHEDULE_CLASSES.append(schedule_class)
+    return schedule_class
+
+
+@register_schedule
 class Once(Schedule):
     names = ["once", "manual", "run-once"]
 
@@ -35,6 +43,7 @@ class Once(Schedule):
         pass
 
 
+@register_schedule
 class Monthly(Schedule):
     names = ["monthly", "everymonth"]
 
@@ -49,6 +58,7 @@ class Monthly(Schedule):
         schedule.every().day.at("00:00").do(only_on_first, lambda: job(source))
 
 
+@register_schedule
 class Weekly(Schedule):
     names = ["weekly"]
 
@@ -59,6 +69,7 @@ class Weekly(Schedule):
         schedule.every().monday.at("00:00").do(job, source)
 
 
+@register_schedule
 class Daily(Schedule):
     names = ["daily", "everyday"]
 
@@ -69,6 +80,7 @@ class Daily(Schedule):
         schedule.every().day.at("00:00").do(job, source)
 
 
+@register_schedule
 class Hourly(Schedule):
     names = ["hourly", "hour"]
 
@@ -79,6 +91,7 @@ class Hourly(Schedule):
         schedule.every().hour.at(":00").do(job, source)
 
 
+@register_schedule
 class FiveMinutes(Schedule):
     names = ["5 minutes", "5 mins", "five minutes", "five mins"]
 
@@ -91,11 +104,10 @@ class FiveMinutes(Schedule):
 
 
 class ScheduleFactory:
-    schedule_classes = [Once, Monthly, Weekly, Daily, Hourly, FiveMinutes]
 
     def __init__(self) -> None:
         self.names_lookup: Dict[str, type] = {}
-        for schedule_class in self.schedule_classes:
+        for schedule_class in SCHEDULE_CLASSES:
             for name in schedule_class.names:
                 if name.casefold() in self.names_lookup:
                     raise ValueError(

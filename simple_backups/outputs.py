@@ -1,11 +1,13 @@
 import logging
 import time
 from abc import ABC, abstractmethod
-from typing import Dict
+from typing import Dict, Type
 
 from google.cloud import storage
 
 logger = logging.getLogger(__name__)
+
+OUTPUT_CLASSES: list[Type["Output"]] = []
 
 
 class Output(ABC):
@@ -23,6 +25,12 @@ class Output(ABC):
         raise NotImplementedError
 
 
+def register_output(output_class: Type[Output]):
+    OUTPUT_CLASSES.append(output_class)
+    return output_class
+
+
+@register_output
 class GoogleStorage(Output):
     name = "google storage"
     max_attempts = 5
@@ -59,11 +67,10 @@ class GoogleStorage(Output):
 
 
 class OutputFactory:
-    output_classes = [GoogleStorage]
 
     def __init__(self) -> None:
         self.names_lookup = {}
-        for output in self.output_classes:
+        for output in OUTPUT_CLASSES:
             if output.name.casefold() in self.names_lookup:
                 raise ValueError(
                     f"Cannot add {output.__name__} output class, as name {output.name} is already "

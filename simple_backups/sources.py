@@ -8,7 +8,7 @@ import sqlite3
 import subprocess
 from abc import abstractmethod, ABC
 from datetime import datetime
-from typing import Dict, Optional, Iterator
+from typing import Dict, Optional, Iterator, Type
 import urllib.parse
 
 import paramiko
@@ -17,6 +17,8 @@ import requests
 from simple_backups.schedules import Schedule, ScheduleFactory
 
 logger = logging.getLogger(__name__)
+
+SOURCE_CLASSES: list[Type["Source"]] = []
 
 
 class Source(ABC):
@@ -46,6 +48,12 @@ class Source(ABC):
         raise NotImplementedError
 
 
+def register_source(source_class: Type[Source]):
+    SOURCE_CLASSES.append(source_class)
+    return source_class
+
+
+@register_source
 class FileSource(Source):
     type = "file"
 
@@ -70,6 +78,7 @@ class FileSource(Source):
         )
 
 
+@register_source
 class DirectorySource(Source):
     type = "directory"
 
@@ -93,6 +102,7 @@ class DirectorySource(Source):
         )
 
 
+@register_source
 class SqliteSource(Source):
     type = "sqlite"
 
@@ -168,6 +178,8 @@ class SSHRemoteFile(Source, ABC):
     def prepare_remote_source(self, ssh: paramiko.SSHClient) -> Iterator[str]:
         raise NotImplementedError
 
+
+@register_source
 class SSHRemoteDirectory(SSHRemoteFile):
     type = "remote_directory"
 
@@ -193,6 +205,7 @@ class SSHRemoteDirectory(SSHRemoteFile):
         )
 
 
+@register_source
 class SSHRemoteCommand(SSHRemoteFile):
     type = "remote_command"
 
@@ -236,6 +249,7 @@ class SSHRemoteCommand(SSHRemoteFile):
         )
 
 
+@register_source
 class DailysSource(Source):
     type = "dailys"
 
@@ -286,6 +300,7 @@ class DailysSource(Source):
         )
 
 
+@register_source
 class MySQLSource(Source):
     type = "mysql"
 
@@ -341,6 +356,7 @@ class MySQLSource(Source):
         )
 
 
+@register_source
 class PostgresSource(Source):
     type = "postgres"
 
@@ -391,20 +407,10 @@ class PostgresSource(Source):
 
 
 class SourceFactory:
-    source_classes = [
-        FileSource,
-        DirectorySource,
-        SqliteSource,
-        SSHRemoteDirectory,
-        SSHRemoteCommand,
-        DailysSource,
-        MySQLSource,
-        PostgresSource,
-    ]
 
     def __init__(self) -> None:
         self.names_lookup = {}
-        for source in self.source_classes:
+        for source in SOURCE_CLASSES:
             if source.type.casefold() in self.names_lookup:
                 raise ValueError(
                     f"Cannot add {source.__name__} source class, as type {source.type} is already "
