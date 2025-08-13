@@ -162,7 +162,7 @@ class SSHRemoteFile(Source, ABC):
             remote_backup_path = f"/tmp/{self.name.replace(' ', '_')}-{backup_timestamp.strftime('%Y%m%dT%H%M%S')}.tar"
             with self.prepare_remote_source(ssh) as remote_src_path:
                 logger.debug("Compressing remote path %s into %s", remote_src_path, remote_backup_path)
-                stdin, stdout, stderr = ssh.exec_command(f"tar -cvf {remote_backup_path} {remote_src_path}")
+                stdin, stdout, stderr = ssh.exec_command(f"tar -cf {remote_backup_path} {remote_src_path}")
             logger.debug(f"ssh stderr: {stderr.readlines()}")
             logger.debug(f"ssh stdout: {stdout.readlines()}")
             sftp = ssh.open_sftp()
